@@ -10,23 +10,34 @@ permissions:
 jobs:
   extrair:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Baixar arquivos do repositorio
+      - name: Baixar repositorio
         uses: actions/checkout@v4
 
-      - name: Extrair projeto
+      - name: Extrair arquivos do ZIP
+        shell: bash
         run: |
+          set -e
           mkdir -p /tmp/santaclara
           unzip -o SantaClara-iOS-Projeto.zip -d /tmp/santaclara
-          cp -R /tmp/santaclara/SantaClara-iOS-Projeto/. .
 
-      - name: Salvar arquivos no GitHub
+          ARQUIVO=$(find /tmp/santaclara -name package.json -type f -print -quit)
+
+          if [ -z "$ARQUIVO" ]; then
+            echo "ERRO: package.json nao encontrado no ZIP"
+            find /tmp/santaclara -maxdepth 4 -type f
+            exit 1
+          fi
+
+          PASTA=$(dirname "$ARQUIVO")
+          cp -R "$PASTA"/. .
+
+      - name: Salvar arquivos no repositorio
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Adicionar arquivos do projeto Santa Clara iOS"
+            git commit -m "Extrair projeto Santa Clara iOS"
             git push
           fi
